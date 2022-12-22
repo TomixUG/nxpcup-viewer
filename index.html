@@ -1,0 +1,80 @@
+<html>
+    <head>
+        <style>
+            .box{
+                float: left;
+                width: 10px;
+                height: 10px;
+                /* background-color: black; */
+            }
+        </style>
+    </head>
+
+    <body>
+        <button>Connect</button>
+        <br/>
+        <br/>
+        <br/>
+        <div id="div1"></div>
+    </body>
+
+    <script>
+
+        for(let i = 0; i<128;i++){
+            // generate the grid
+            const newDiv = document.createElement("div");
+            newDiv.className = "box";
+            newDiv.id = i;
+            document.body.appendChild(newDiv);
+        }
+
+
+        var data = "";
+        document.querySelector('button').addEventListener('click', async () => {
+            // Prompt user to select any serial port.
+            const port = await navigator.serial.requestPort();
+            await port.open({ baudRate: 9600 });
+
+            const reader = port.readable.getReader();
+
+            // Listen to data coming from the serial device.
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) {
+                    // Allow the serial port to be closed later.
+                    reader.releaseLock();
+                    break;
+                }
+                // value is a Uint8Array.
+                let val = new TextDecoder().decode(value);
+                // console.log(val);
+                if(val.includes("\n")){
+                    // finished     
+                    data = data.split(";").map(function(item) {
+                        return parseInt(item, 10);
+                    });
+                    data.splice(-1,1);
+
+                    var max = Math.max(...data);
+                    var min = Math.min(...data);
+                    console.log(data)
+
+                    for(let i = 0; i<128;i++){
+                        // generate the grid
+                        const div = document.getElementById(i);
+
+                        var brighteness = (data[i]-min)/(max-min);
+                        div.style.backgroundColor = `rgb(-1 0 0 / ${brighteness})`;
+                        div.title = brighteness;
+                    }
+
+                    data = "";
+                } else {
+                    data += val;
+                }
+            }
+        });
+
+    </script>
+
+</html>
